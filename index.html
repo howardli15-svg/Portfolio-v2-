@@ -1,52 +1,98 @@
-<script>
-  const MAX = 4;
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>希晨 的 AR 展覽館</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #start-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url('./bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: white;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: flex-start; padding-top: 15%;
+            z-index: 9999; font-family: sans-serif;
+        }
+        #start-overlay::before {
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.3); z-index: -1;
+        }
+        #start-button {
+            padding: 18px 45px; font-size: 20px; background-color: #f1c40f;
+            color: #2c3e50; border: none; border-radius: 50px; cursor: pointer;
+            font-weight: bold; box-shadow: 0 6px 15px rgba(0,0,0,0.3); margin-top: 20px;
+        }
+        .title-text {
+            font-size: 28px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-align: center; line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
 
-  const startScreen = document.getElementById("start-screen");
-  const enterBtn = document.getElementById("enter-btn");
-  const sceneEl = document.getElementById("ar-scene");
+    <div id="start-overlay">
+        <div class="title-text">希晨 的成長時刻<br>AR 互動展覽館</div>
+        <button id="start-button">進入體驗</button>
+    </div>
 
-  function setupVideosWithSound() {
-    for (let i = 0; i <= MAX; i++) {
-      const v = document.getElementById("video" + i);
-      if (!v) continue;
-      v.muted = false;          // 開聲
-      v.removeAttribute("muted");
-      v.volume = 1.0;
-      // 喺「用戶撳掣」同一時間解鎖音訊
-      v.play().then(function () {
-        v.pause();
-        v.currentTime = 0;
-      }).catch(function () {});
-    }
-  }
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 2;" renderer="colorManagement: true" vr-mode-ui="enabled: false">
 
-  function playForTarget(index) {
-    const v = document.getElementById("video" + index);
-    if (!v) return;
-    v.muted = false;
-    v.volume = 1.0;
-    v.currentTime = 0;
-    const p = v.play();
-    if (p && p.catch) p.catch(function () {});
-  }
+        <a-assets>
+            <video id="video0" src="./video0.mp4" preload="auto" loop="true" playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video1" src="./video1.mp4" preload="auto" loop="true" playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video2" src="./video2.mp4" preload="auto" loop="true" playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video3" src="./video3.mp4" preload="auto" loop="true" playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video4" src="./video4.mp4" preload="auto" loop="true" playsinline webkit-playsinline crossorigin="anonymous"></video>
+        </a-assets>
 
-  function pauseForTarget(index) {
-    const v = document.getElementById("video" + index);
-    if (!v) return;
-    v.pause();
-  }
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-  enterBtn.addEventListener("click", function () {
-    setupVideosWithSound();   // 靠呢下 click 解鎖有聲
-    startScreen.style.display = "none";
-    sceneEl.style.display = "block";
-    sceneEl.play();
+        <!-- 0～4 全部直屏 9:16 → height 1.777 -->
+        <a-entity mindar-image-target="targetIndex: 0"><a-entity class="ar-plane" geometry="primitive: plane; width: 1; height: 1.777" scale="1.05 1.05 1" position="0 0 0"></a-entity></a-entity>
+        <a-entity mindar-image-target="targetIndex: 1"><a-entity class="ar-plane" geometry="primitive: plane; width: 1; height: 1.777" scale="1.05 1.05 1" position="0 0 0"></a-entity></a-entity>
+        <a-entity mindar-image-target="targetIndex: 2"><a-entity class="ar-plane" geometry="primitive: plane; width: 1; height: 1.777" scale="1.05 1.05 1" position="0 0 0"></a-entity></a-entity>
+        <a-entity mindar-image-target="targetIndex: 3"><a-entity class="ar-plane" geometry="primitive: plane; width: 1; height: 1.777" scale="1.05 1.05 1" position="0 0 0"></a-entity></a-entity>
+        <a-entity mindar-image-target="targetIndex: 4"><a-entity class="ar-plane" geometry="primitive: plane; width: 1; height: 1.777" scale="1.05 1.05 1" position="0 0 0"></a-entity></a-entity>
+    </a-scene>
 
-    for (let i = 0; i <= MAX; i++) {
-      const target = document.querySelector('[mindar-image-target="targetIndex: ' + i + '"]');
-      if (!target) continue;
-      target.addEventListener("targetFound", function () { playForTarget(i); });
-      target.addEventListener("targetLost", function () { pauseForTarget(i); });
-    }
-  });
-</script>
+    <script>
+        const startButton = document.querySelector('#start-button');
+        const startOverlay = document.querySelector('#start-overlay');
+        const planes = document.querySelectorAll('.ar-plane');
+
+        // 要靜音嘅編號；全部有聲就留空 []
+        // 例如只靜音 0 同 1： const mutedIndexes = [0, 1];
+        const mutedIndexes = [];
+
+        startButton.addEventListener('click', () => {
+            startOverlay.style.display = 'none';
+            // 用戶點擊解鎖播放（有聲關鍵）
+            for (let i = 0; i <= 4; i++) {
+                const v = document.querySelector('#video' + i);
+                if (!v) continue;
+                v.muted = mutedIndexes.includes(i);
+                v.play().then(() => { v.pause(); }).catch(() => {});
+            }
+        });
+
+        document.querySelectorAll('[mindar-image-target]').forEach((target, index) => {
+            const currentVideo = document.querySelector('#video' + index);
+
+            target.addEventListener('targetFound', () => {
+                planes[index].setAttribute('material', 'src: #video' + index + '; shader: flat; transparent: true');
+                currentVideo.play();
+            });
+
+            target.addEventListener('targetLost', () => {
+                currentVideo.pause();
+                planes[index].removeAttribute('material');
+            });
+        });
+    </script>
+</body>
+</html>
