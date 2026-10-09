@@ -40,7 +40,6 @@
         <button id="start-button">進入體驗</button>
     </div>
 
-    <!-- maxTrack: 1 = 一次只認一張相 -->
     <a-scene mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1;" renderer="colorManagement: true" vr-mode-ui="enabled: false">
 
         <a-assets>
@@ -66,14 +65,19 @@
         const planes = document.querySelectorAll('.ar-plane');
         const mutedIndexes = [];
         const MAX = 4;
+        const lostTimers = {};
+        const hasMaterial = {};
 
         function stopAllExcept(keepIndex) {
             for (let i = 0; i <= MAX; i++) {
+                if (i === keepIndex) continue;
                 const v = document.querySelector('#video' + i);
-                if (!v) continue;
-                if (i !== keepIndex) {
-                    v.pause();
-                    if (planes[i]) planes[i].removeAttribute('material');
+                if (v) v.pause();
+                if (planes[i]) planes[i].removeAttribute('material');
+                hasMaterial[i] = false;
+                if (lostTimers[i]) {
+                    clearTimeout(lostTimers[i]);
+                    lostTimers[i] = null;
                 }
             }
         }
@@ -92,16 +96,38 @@
             const currentVideo = document.querySelector('#video' + index);
 
             target.addEventListener('targetFound', () => {
-                // 先停晒其他，只播呢一條
+                // 手震短暫 lost 又 found：取消暫停
+                if (lostTimers[index]) {
+                    clearTimeout(lostTimers[index]);
+                    lostTimers[index] = null;
+                }
+
                 stopAllExcept(index);
-                planes[index].setAttribute('material', 'src: #video' + index + '; shader: flat; transparent: true');
-                currentVideo.currentTime = 0;
-                currentVideo.play();
+
+                // 只 set 一次 material，避免狂重置
+                if (!hasMaterial[index]) {
+                    planes[index].setAttribute(
+                        'material',
+                        'src: #video' + index + '; shader: flat; transparent: true'
+                    );
+                    hasMaterial[index] = true;
+                }
+
+                // 認到緊：只繼續播，唔 currentTime = 0
+                if (currentVideo.paused) {
+                    const p = currentVideo.play();
+                    if (p && p.catch) p.catch(() => {});
+                }
             });
 
             target.addEventListener('targetLost', () => {
-                currentVideo.pause();
-                planes[index].removeAttribute('material');
+                // 延遲先停，避免播幾秒就斷
+                lostTimers[index] = setTimeout(() => {
+                    currentVideo.pause();
+                    planes[index].removeAttribute('material');
+                    hasMaterial[index] = false;
+                    lostTimers[index] = null;
+                }, 500);
             });
         });
     </script>
