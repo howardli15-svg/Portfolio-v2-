@@ -40,7 +40,8 @@
         <button id="start-button">進入體驗</button>
     </div>
 
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 2;" renderer="colorManagement: true" vr-mode-ui="enabled: false">
+    <!-- maxTrack: 1 = 一次只認一張相 -->
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1;" renderer="colorManagement: true" vr-mode-ui="enabled: false">
 
         <a-assets>
             <video id="video0" src="./video0.mp4" preload="auto" loop="true" playsinline webkit-playsinline crossorigin="anonymous"></video>
@@ -52,7 +53,6 @@
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        <!-- 0～4 全部直屏 9:16 → height 1.777 -->
         <a-entity mindar-image-target="targetIndex: 0"><a-entity class="ar-plane" geometry="primitive: plane; width: 1; height: 1.777" scale="1.05 1.05 1" position="0 0 0"></a-entity></a-entity>
         <a-entity mindar-image-target="targetIndex: 1"><a-entity class="ar-plane" geometry="primitive: plane; width: 1; height: 1.777" scale="1.05 1.05 1" position="0 0 0"></a-entity></a-entity>
         <a-entity mindar-image-target="targetIndex: 2"><a-entity class="ar-plane" geometry="primitive: plane; width: 1; height: 1.777" scale="1.05 1.05 1" position="0 0 0"></a-entity></a-entity>
@@ -64,15 +64,23 @@
         const startButton = document.querySelector('#start-button');
         const startOverlay = document.querySelector('#start-overlay');
         const planes = document.querySelectorAll('.ar-plane');
-
-        // 要靜音嘅編號；全部有聲就留空 []
-        // 例如只靜音 0 同 1： const mutedIndexes = [0, 1];
         const mutedIndexes = [];
+        const MAX = 4;
+
+        function stopAllExcept(keepIndex) {
+            for (let i = 0; i <= MAX; i++) {
+                const v = document.querySelector('#video' + i);
+                if (!v) continue;
+                if (i !== keepIndex) {
+                    v.pause();
+                    if (planes[i]) planes[i].removeAttribute('material');
+                }
+            }
+        }
 
         startButton.addEventListener('click', () => {
             startOverlay.style.display = 'none';
-            // 用戶點擊解鎖播放（有聲關鍵）
-            for (let i = 0; i <= 4; i++) {
+            for (let i = 0; i <= MAX; i++) {
                 const v = document.querySelector('#video' + i);
                 if (!v) continue;
                 v.muted = mutedIndexes.includes(i);
@@ -84,7 +92,10 @@
             const currentVideo = document.querySelector('#video' + index);
 
             target.addEventListener('targetFound', () => {
+                // 先停晒其他，只播呢一條
+                stopAllExcept(index);
                 planes[index].setAttribute('material', 'src: #video' + index + '; shader: flat; transparent: true');
+                currentVideo.currentTime = 0;
                 currentVideo.play();
             });
 
