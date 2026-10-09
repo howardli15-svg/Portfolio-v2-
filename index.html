@@ -1,127 +1,52 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>希晨 的 AR 展覽館</title>
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; font-family: "Microsoft JhengHei", sans-serif; }
-    #start-screen {
-      position: fixed; inset: 0; z-index: 9999;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: #1a1a1a url("./bg.jpg") center/cover no-repeat;
-      color: #fff; text-align: center; padding: 24px;
+<script>
+  const MAX = 4;
+
+  const startScreen = document.getElementById("start-screen");
+  const enterBtn = document.getElementById("enter-btn");
+  const sceneEl = document.getElementById("ar-scene");
+
+  function setupVideosWithSound() {
+    for (let i = 0; i <= MAX; i++) {
+      const v = document.getElementById("video" + i);
+      if (!v) continue;
+      v.muted = false;          // 開聲
+      v.removeAttribute("muted");
+      v.volume = 1.0;
+      // 喺「用戶撳掣」同一時間解鎖音訊
+      v.play().then(function () {
+        v.pause();
+        v.currentTime = 0;
+      }).catch(function () {});
     }
-    #start-screen .title-text {
-      font-size: 1.6rem; font-weight: 700; line-height: 1.5; margin-bottom: 12px;
-      text-shadow: 0 2px 8px rgba(0,0,0,.5);
+  }
+
+  function playForTarget(index) {
+    const v = document.getElementById("video" + index);
+    if (!v) return;
+    v.muted = false;
+    v.volume = 1.0;
+    v.currentTime = 0;
+    const p = v.play();
+    if (p && p.catch) p.catch(function () {});
+  }
+
+  function pauseForTarget(index) {
+    const v = document.getElementById("video" + index);
+    if (!v) return;
+    v.pause();
+  }
+
+  enterBtn.addEventListener("click", function () {
+    setupVideosWithSound();   // 靠呢下 click 解鎖有聲
+    startScreen.style.display = "none";
+    sceneEl.style.display = "block";
+    sceneEl.play();
+
+    for (let i = 0; i <= MAX; i++) {
+      const target = document.querySelector('[mindar-image-target="targetIndex: ' + i + '"]');
+      if (!target) continue;
+      target.addEventListener("targetFound", function () { playForTarget(i); });
+      target.addEventListener("targetLost", function () { pauseForTarget(i); });
     }
-    #start-screen .sub { font-size: 0.95rem; opacity: .9; margin-bottom: 28px; }
-    #enter-btn {
-      background: #e07a2f; color: #fff; border: none; border-radius: 999px;
-      padding: 14px 36px; font-size: 1.1rem; font-weight: 700; cursor: pointer;
-      box-shadow: 0 4px 16px rgba(0,0,0,.3);
-    }
-    #enter-btn:active { transform: scale(0.98); }
-    .a-enter-vr { display: none !important; }
-  </style>
-</head>
-<body>
-
-  <div id="start-screen">
-    <div class="title-text">希晨 的成長時刻<br>AR 互動展覽館</div>
-    <div class="sub">允許相機後，對準 Portfolio 上的照片</div>
-    <button id="enter-btn" type="button">進入體驗</button>
-  </div>
-
-  <a-scene
-    id="ar-scene"
-    mindar-image="imageTargetSrc: ./targets.mind; uiLoading: yes; uiScanning: yes; uiError: yes;"
-    color-space="sRGB"
-    renderer="colorManagement: true, physicallyCorrectLights"
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false"
-    embedded
-    style="display:none; position:fixed; inset:0; width:100%; height:100%;"
-  >
-    <a-assets>
-      <video id="video0" src="./video0.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-      <video id="video1" src="./video1.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-      <video id="video2" src="./video2.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-      <video id="video3" src="./video3.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-      <video id="video4" src="./video4.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-    </a-assets>
-
-    <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;"></a-camera>
-
-    <!-- 直屏 9:16 → height 1.777；若某條係橫片，該條改 width="1.777" height="1" -->
-    <a-entity mindar-image-target="targetIndex: 0">
-      <a-video src="#video0" width="1" height="1.777" position="0 0 0.1"></a-video>
-    </a-entity>
-    <a-entity mindar-image-target="targetIndex: 1">
-      <a-video src="#video1" width="1" height="1.777" position="0 0 0.1"></a-video>
-    </a-entity>
-    <a-entity mindar-image-target="targetIndex: 2">
-      <a-video src="#video2" width="1" height="1.777" position="0 0 0.1"></a-video>
-    </a-entity>
-    <a-entity mindar-image-target="targetIndex: 3">
-      <a-video src="#video3" width="1" height="1.777" position="0 0 0.1"></a-video>
-    </a-entity>
-    <a-entity mindar-image-target="targetIndex: 4">
-      <a-video src="#video4" width="1" height="1.777" position="0 0 0.1"></a-video>
-    </a-entity>
-  </a-scene>
-
-  <script>
-    // 0～4 全部靜音先（手機自動播較穩）；想某條有聲就從陣列拎走該數字
-    const mutedIndexes = [0, 1, 2, 3, 4];
-    const MAX = 4;
-
-    const startScreen = document.getElementById("start-screen");
-    const enterBtn = document.getElementById("enter-btn");
-    const sceneEl = document.getElementById("ar-scene");
-
-    function setupVideos() {
-      for (let i = 0; i <= MAX; i++) {
-        const v = document.getElementById("video" + i);
-        if (!v) continue;
-        if (mutedIndexes.indexOf(i) !== -1) {
-          v.muted = true;
-          v.setAttribute("muted", "");
-        }
-      }
-    }
-
-    function playForTarget(index) {
-      const v = document.getElementById("video" + index);
-      if (!v) return;
-      v.currentTime = 0;
-      const p = v.play();
-      if (p && p.catch) p.catch(function () {});
-    }
-
-    function pauseForTarget(index) {
-      const v = document.getElementById("video" + index);
-      if (!v) return;
-      v.pause();
-    }
-
-    enterBtn.addEventListener("click", function () {
-      setupVideos();
-      startScreen.style.display = "none";
-      sceneEl.style.display = "block";
-      sceneEl.play();
-
-      for (let i = 0; i <= MAX; i++) {
-        const target = document.querySelector('[mindar-image-target="targetIndex: ' + i + '"]');
-        if (!target) continue;
-        target.addEventListener("targetFound", function () { playForTarget(i); });
-        target.addEventListener("targetLost", function () { pauseForTarget(i); });
-      }
-    });
-  </script>
-</body>
-</html>
+  });
+</script>
